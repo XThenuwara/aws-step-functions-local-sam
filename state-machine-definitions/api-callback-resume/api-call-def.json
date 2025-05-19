@@ -1,0 +1,47 @@
+{
+	"Comment": "State machine with HTTP POST and Task Token",
+	"StartAt": "CallAPI",
+	"States": {
+		"CallAPI": {
+			"Type": "Task",
+			"Resource": "arn:aws:states:::http:invoke",
+			"Parameters": {
+				"ApiEndpoint": "https:/<*************NGROCKENDPOINT****************>ngrok-free.app/callback",
+				"Method": "POST",
+				"RequestBody": {
+					"TaskToken.$": "$$.Task.Token",
+					"requestId.$": "$.requestId",
+					"message": "Initiating the API call..."
+				}
+			},
+			"TimeoutSeconds": 300,
+			"Next": "ProcessResult"
+		},
+		"ProcessResult": {
+			"Type": "Choice",
+			"Choices": [
+				{
+					"Variable": "$.status",
+					"StringEquals": "SUCCESS",
+					"Next": "SuccessState"
+				},
+				{
+					"Variable": "$.status",
+					"StringEquals": "FAIL",
+					"Next": "FailState"
+				}
+			],
+			"Default": "FailState"
+		},
+		"SuccessState": {
+			"Type": "Pass",
+			"Result": "API Call Succeeded",
+			"End": true
+		},
+		"FailState": {
+			"Type": "Fail",
+			"Error": "APIError",
+			"Cause": "The API call failed."
+		}
+	}
+}
